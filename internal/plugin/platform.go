@@ -6,6 +6,7 @@ import (
 	azureweb "github.com/Azure/azure-sdk-for-go/profiles/latest/web/mgmt/web"
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/waypoint-plugin-sdk/component"
+	"github.com/hashicorp/waypoint-plugin-sdk/docs"
 	"github.com/hashicorp/waypoint-plugin-sdk/terminal"
 	"github.com/hashicorp/waypoint/builtin/docker"
 	"github.com/magodo/waypoint-plugin-azure-app-service/azure"
@@ -13,34 +14,49 @@ import (
 	"net/http"
 )
 
-type DeployConfig struct {
+type PlatformConfig struct {
+	// The name of the resource group where the App Service resides in.
 	ResourceGroupName string `hcl:"resource_group_name"`
+
+	// The name of the App Service.
 	AppServiceName    string `hcl:"app_service_name"`
 }
 
 type Platform struct {
-	config DeployConfig
+	config PlatformConfig
 }
+
+
+var (
+	_ component.Platform     = (*Platform)(nil)
+	_ component.Configurable = (*Platform)(nil)
+	_ component.Destroyer    = (*Platform)(nil)
+	_ component.Documented   = (*Platform)(nil)
+)
 
 func (p *Platform) Config() (interface{}, error) {
 	return &p.config, nil
 }
 
 func (p *Platform) ConfigSet(config interface{}) error {
-	c, ok := config.(*DeployConfig)
+	c, ok := config.(*PlatformConfig)
 	if !ok {
 		// The Waypoint SDK should ensure this never gets hit
-		return fmt.Errorf("Expected *DeployConfig as parameter")
+		return fmt.Errorf("Expected *PlatformConfig as parameter")
 	}
 	_ = c
 	return nil
 }
 
 func (p *Platform) DeployFunc() interface{} {
-	return p.deploy
+	return p.Deploy
 }
 
-func (p *Platform) deploy(
+// Deploy deploys an image to Azure App Service.
+//
+// In case the App Service allows to create slot, it will create a new slot for each deployment.
+// Otherwise, it will deploy the app to the App Service's default production slot.
+func (p *Platform) Deploy(
 	ctx context.Context,
 	ui terminal.UI,
 	log hclog.Logger,
@@ -275,4 +291,13 @@ func (p *Platform) DefaultReleaserFunc() interface{} {
 	return func() *Releaser {
 		return &Releaser{}
 	}
+}
+
+func (p *Platform) Documentation() (*docs.Documentation, error) {
+	doc, err := docs.New(docs.FromConfig(&PlatformConfig{}), docs.FromFunc(p.DeployFunc()))
+	if err != nil {
+		return nil, err
+	}
+
+	return doc, nil
 }

@@ -4,18 +4,27 @@ import (
 	"context"
 	"fmt"
 	azureweb "github.com/Azure/azure-sdk-for-go/profiles/latest/web/mgmt/web"
+	"github.com/hashicorp/waypoint-plugin-sdk/component"
+	"github.com/hashicorp/waypoint-plugin-sdk/docs"
 	"github.com/hashicorp/waypoint-plugin-sdk/terminal"
 	"github.com/magodo/waypoint-plugin-azure-app-service/azure"
 	"github.com/magodo/waypoint-plugin-azure-app-service/azure/web"
 )
 
 type ReleaseConfig struct {
+	// Whether to create a new virtual network after Release
 	NewVnet bool `hcl:"new_vnet,optional"`
 }
 
 type Releaser struct {
 	config ReleaseConfig
 }
+
+var (
+	_ component.ReleaseManager = (*Releaser)(nil)
+	_ component.Configurable   = (*Releaser)(nil)
+	_ component.Documented     = (*Releaser)(nil)
+)
 
 func (rm *Releaser) Config() (interface{}, error) {
 	return &rm.config, nil
@@ -31,10 +40,14 @@ func (rm *Releaser) ConfigSet(config interface{}) error {
 }
 
 func (rm *Releaser) ReleaseFunc() interface{} {
-	return rm.release
+	return rm.Release
 }
 
-func (rm *Releaser) release(ctx context.Context, ui terminal.UI, deployment *DeploymentOutput) (*ReleaseOutput, error) {
+// Release releases a new deployment to the Azure App Service.
+//
+// In case the App Service allows to create slot, it will swap the staged slot (created in deployment step) to production.
+// Otherwise, it will do nothing, since in deployment step, the image has already been "released".
+func (rm *Releaser) Release(ctx context.Context, ui terminal.UI, deployment *DeploymentOutput) (*ReleaseOutput, error) {
 	u := ui.Status()
 	defer u.Close()
 	ui.Output("Release application")
@@ -61,9 +74,9 @@ func (rm *Releaser) release(ctx context.Context, ui terminal.UI, deployment *Dep
 	}
 
 	// If the AppServiceSlotId is not set in the deployment, it means this APp Service Plan doesn't support slot creation.
-	// In this case, the deployment step has already done the release, and there is nothing needed to be done here.
+	// In this case, the deployment step has already done the Release, and there is nothing needed to be done here.
 	if deployment.AppServiceSlotId == "" {
-		u.Step(terminal.StatusOK, "Created release")
+		u.Step(terminal.StatusOK, "Created Release")
 		return &ReleaseOutput{
 			Url: url,
 		}, nil
@@ -89,8 +102,17 @@ func (rm *Releaser) release(ctx context.Context, ui terminal.UI, deployment *Dep
 		return nil, fmt.Errorf("waiting for slot swap on %s: %+v", appServiceId, err)
 	}
 
-	u.Step(terminal.StatusOK, "Created release")
+	u.Step(terminal.StatusOK, "Created Release")
 	return &ReleaseOutput{
 		Url: url,
 	}, nil
+}
+
+func (r *Releaser) Documentation() (*docs.Documentation, error) {
+	doc, err := docs.New(docs.FromConfig(&ReleaseConfig{}), docs.FromFunc(r.ReleaseFunc()))
+	if err != nil {
+		return nil, err
+	}
+
+	return doc, nil
 }
