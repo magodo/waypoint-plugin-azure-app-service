@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package release;
+
+option go_package = "github.com/magodo/waypoint-plugin-azure-app-service/internal/plugin";
+
+// You can customise this message to change the fields for
+// the output value from your ReleaseManager
+message ReleaseOutput {
+  string url = 1;
+}

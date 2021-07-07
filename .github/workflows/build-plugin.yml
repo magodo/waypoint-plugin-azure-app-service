@@ -29,7 +29,7 @@ jobs:
     
     - name: Create Release
       id: create_release
-      uses: actions/create-release@v1
+      uses: actions/create-releaser@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
       with:
@@ -59,7 +59,7 @@ jobs:
         name: plugin-binaries
 
     - name: Upload Release Asset ${{ matrix.os }}
-      uses: actions/upload-release-asset@v1
+      uses: actions/upload-releaser-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:

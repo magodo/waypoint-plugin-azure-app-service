@@ -1,4 +1,4 @@
-package appservice
+package web
 
 import (
 	"fmt"
@@ -34,7 +34,6 @@ func (id AppServiceId) ID() string {
 	return fmt.Sprintf(fmtString, id.SubscriptionId, id.ResourceGroup, id.SiteName)
 }
 
-// AppServiceID parses a AppService ID into an AppServiceId struct
 func AppServiceID(input string) (*AppServiceId, error) {
 	p := regexp.MustCompile(`/subscriptions/([^/]+)/resourceGroups/([^/]+)/providers/Microsoft.Web/sites/([^/]+)`)
 	m := p.FindAllStringSubmatch(input, 1)

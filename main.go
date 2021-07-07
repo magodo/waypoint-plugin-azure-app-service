@@ -2,11 +2,12 @@ package main
 
 import (
 	sdk "github.com/hashicorp/waypoint-plugin-sdk"
-	"github.com/magodo/waypoint-plugin-azure-app-service/platform"
+	"github.com/magodo/waypoint-plugin-azure-app-service/internal/plugin"
 )
 
 func main() {
 	sdk.Main(sdk.WithComponents(
-		&platform.Platform{},
+		&plugin.Platform{},
+		//&plugin.Releaser{},
 	))
 }
