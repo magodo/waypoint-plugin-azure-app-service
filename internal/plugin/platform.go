@@ -14,7 +14,8 @@ import (
 )
 
 type DeployConfig struct {
-	AppServiceID string `hcl:"app_service_id,optional"`
+	ResourceGroupName string `hcl:"resource_group_name"`
+	AppServiceName    string `hcl:"app_service_name"`
 }
 
 type Platform struct {
@@ -31,15 +32,7 @@ func (p *Platform) ConfigSet(config interface{}) error {
 		// The Waypoint SDK should ensure this never gets hit
 		return fmt.Errorf("Expected *DeployConfig as parameter")
 	}
-
-	// validate the config
-	if c.AppServiceID == "" {
-		return fmt.Errorf("`app_service_id` not set")
-	}
-	if _, err := web.AppServiceID(c.AppServiceID); err != nil {
-		return fmt.Errorf("invalid value for `app_service_id`: %+v", err)
-	}
-
+	_ = c
 	return nil
 }
 
@@ -57,8 +50,12 @@ func (p *Platform) deploy(
 	defer u.Close()
 	u.Update("Deploy application")
 
-	// validated in the ConfigSet()
-	id, _ := web.AppServiceID(p.config.AppServiceID)
+	authorizer, err := azure.NewAuthorizer(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	id := web.NewAppServiceID(authorizer.Config.SubscriptionID, p.config.ResourceGroupName, p.config.AppServiceName)
 
 	// Check the App Service Plan to see whether its tier (only when the tier is in one of "Standard", "Premium", "Isolated")
 	// allows to create separate deployment slots.
@@ -81,7 +78,7 @@ func (p *Platform) buildSiteConfigPatch(img *docker.Image) azureweb.SiteConfig {
 	}
 }
 
-func (p *Platform) deployToAppService(ctx context.Context, u terminal.Status, log hclog.Logger, appServiceId *web.AppServiceId, img *docker.Image) (*DeploymentOutput, error) {
+func (p *Platform) deployToAppService(ctx context.Context, u terminal.Status, log hclog.Logger, appServiceId web.AppServiceId, img *docker.Image) (*DeploymentOutput, error) {
 	authorizer, err := azure.NewAuthorizer(ctx)
 	if err != nil {
 		return nil, err
@@ -111,7 +108,7 @@ func (p *Platform) deployToAppService(ctx context.Context, u terminal.Status, lo
 	}, nil
 }
 
-func (p *Platform) deployToAppServiceSlot(ctx context.Context, u terminal.Status, log hclog.Logger, appServiceId *web.AppServiceId, img *docker.Image) (*DeploymentOutput, error) {
+func (p *Platform) deployToAppServiceSlot(ctx context.Context, u terminal.Status, log hclog.Logger, appServiceId web.AppServiceId, img *docker.Image) (*DeploymentOutput, error) {
 	authorizer, err := azure.NewAuthorizer(ctx)
 	if err != nil {
 		return nil, err
@@ -139,7 +136,7 @@ func (p *Platform) deployToAppServiceSlot(ctx context.Context, u terminal.Status
 
 	// Update the existing slot.
 	if embeddedResp.StatusCode == http.StatusOK {
-		if err := p.updateSlotImage(ctx, u, img, client, slotId); err !=nil {
+		if err := p.updateSlotImage(ctx, u, img, client, slotId); err != nil {
 			return nil, err
 		}
 		return &DeploymentOutput{
@@ -166,7 +163,7 @@ func (p *Platform) deployToAppServiceSlot(ctx context.Context, u terminal.Status
 		return nil, fmt.Errorf("watinig for the creation of %s: %+v", slotId, err)
 	}
 
-	if err := p.updateSlotImage(ctx, u, img, client, slotId); err !=nil {
+	if err := p.updateSlotImage(ctx, u, img, client, slotId); err != nil {
 		return nil, err
 	}
 
@@ -176,7 +173,7 @@ func (p *Platform) deployToAppServiceSlot(ctx context.Context, u terminal.Status
 	}, nil
 }
 
-func (p *Platform) updateSlotImage(ctx context.Context, u terminal.Status, img *docker.Image, client azureweb.AppsClient, slotId web.AppServiceSlotId)  error {
+func (p *Platform) updateSlotImage(ctx context.Context, u terminal.Status, img *docker.Image, client azureweb.AppsClient, slotId web.AppServiceSlotId) error {
 	siteConfig := p.buildSiteConfigPatch(img)
 	u.Update(fmt.Sprintf("Update %s", slotId))
 	siteEnvelope := azureweb.SitePatchResource{
@@ -185,12 +182,12 @@ func (p *Platform) updateSlotImage(ctx context.Context, u terminal.Status, img *
 		},
 	}
 	if _, err := client.UpdateSlot(ctx, slotId.ResourceGroup, slotId.SiteName, siteEnvelope, slotId.SlotName); err != nil {
-		return  err
+		return err
 	}
 
 	u.Update(fmt.Sprintf("Update the site config for %s", slotId))
 	if _, err := client.UpdateConfigurationSlot(ctx, slotId.ResourceGroup, slotId.SiteName, azureweb.SiteConfigResource{SiteConfig: &siteConfig}, slotId.SlotName); err != nil {
-		return  err
+		return err
 	}
 	return nil
 }

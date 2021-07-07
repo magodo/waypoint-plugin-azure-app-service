@@ -6,7 +6,7 @@ import (
 	"github.com/magodo/waypoint-plugin-azure-app-service/azure"
 )
 
-func AppServiceSupportsSlot(ctx context.Context, id *AppServiceId) (bool, error) {
+func AppServiceSupportsSlot(ctx context.Context, id AppServiceId) (bool, error) {
 	authorizer, err := azure.NewAuthorizer(ctx)
 	if err != nil {
 		return false, err
