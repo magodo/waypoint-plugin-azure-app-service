@@ -3,6 +3,7 @@ package web
 import (
 	"context"
 	"fmt"
+	azureweb "github.com/Azure/azure-sdk-for-go/profiles/latest/web/mgmt/web"
 	"github.com/magodo/waypoint-plugin-azure-app-service/azure"
 )
 
@@ -45,4 +46,15 @@ func AppServiceSupportsSlot(ctx context.Context, id AppServiceId) (bool, error) 
 
 	tier := *planResp.Sku.Tier
 	return tier == "Standard" || tier == "Premium" || tier == "Isolated", nil
+}
+
+func AppServiceDefaultHost(site azureweb.Site) (string, error) {
+	if site.SiteProperties == nil {
+		return "", fmt.Errorf(`unexpected nil "siteProperties" of App Service`)
+	}
+	if site.SiteProperties.DefaultHostName == nil {
+		return "", fmt.Errorf(`unexpected nil "siteProperties.defaultHostName" of App Service`)
+	}
+	url := "https://" + *site.SiteProperties.DefaultHostName
+	return url, nil
 }

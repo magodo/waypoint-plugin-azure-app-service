@@ -8,6 +8,6 @@ import (
 func main() {
 	sdk.Main(sdk.WithComponents(
 		&plugin.Platform{},
-		//&plugin.Releaser{},
+		&plugin.Releaser{},
 	))
 }

@@ -103,7 +103,18 @@ func (p *Platform) deployToAppService(ctx context.Context, u terminal.Status, lo
 		return nil, err
 	}
 
+	// Get the URL
+	resp, err := client.Get(ctx, appServiceId.ResourceGroup, appServiceId.SiteName)
+	if err != nil {
+		return nil, err
+	}
+	url, err := web.AppServiceDefaultHost(resp)
+	if err != nil {
+		return nil, err
+	}
+
 	return &DeploymentOutput{
+		Url:          url,
 		AppServiceId: appServiceId.ID(),
 	}, nil
 }
@@ -136,10 +147,26 @@ func (p *Platform) deployToAppServiceSlot(ctx context.Context, u terminal.Status
 
 	// Update the existing slot.
 	if embeddedResp.StatusCode == http.StatusOK {
+
+		if err != nil {
+			return nil, err
+		}
 		if err := p.updateSlotImage(ctx, u, img, client, slotId); err != nil {
 			return nil, err
 		}
+
+		// Get the URL
+		resp, err := client.GetSlot(ctx, slotId.ResourceGroup, slotId.SiteName, slotId.SlotName)
+		if err != nil {
+			return nil, err
+		}
+		url, err := web.AppServiceDefaultHost(resp)
+		if err != nil {
+			return nil, err
+		}
+
 		return &DeploymentOutput{
+			Url:              url,
 			AppServiceId:     appServiceId.ID(),
 			AppServiceSlotId: slotId.ID(),
 		}, nil
@@ -167,7 +194,18 @@ func (p *Platform) deployToAppServiceSlot(ctx context.Context, u terminal.Status
 		return nil, err
 	}
 
+	// Get the URL
+	slotResp, err := client.GetSlot(ctx, slotId.ResourceGroup, slotId.SiteName, slotId.SlotName)
+	if err != nil {
+		return nil, err
+	}
+	url, err := web.AppServiceDefaultHost(slotResp)
+	if err != nil {
+		return nil, err
+	}
+
 	return &DeploymentOutput{
+		Url:              url,
 		AppServiceId:     appServiceId.ID(),
 		AppServiceSlotId: slotId.ID(),
 	}, nil
@@ -231,4 +269,10 @@ func (p *Platform) destroy(
 
 	st.Step(terminal.StatusOK, fmt.Sprintf("Deleted %s", id))
 	return nil
+}
+
+func (p *Platform) DefaultReleaserFunc() interface{} {
+	return func() *Releaser {
+		return &Releaser{}
+	}
 }

@@ -3,8 +3,8 @@ project = "example"
 app "example" {
   build {
     use "docker-pull" {
-        image = "nginxdemos/hello"
-        #image = "yeasy/simple-web"
+        #image = "nginxdemos/hello"
+        image = "yeasy/simple-web"
         tag = "latest"
     }
   }
@@ -15,8 +15,7 @@ app "example" {
     }
   }
 
-  /* release { */
-  /*     use "azure-app-service" { */
-  /*     } */
-  /* } */
+  release {
+      use "azure-app-service" {}
+  }
 }
