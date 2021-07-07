@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package platform;
+
+option go_package = "github.com/magodo/waypoint-plugin-azure-app-service/internal/plugin";
+
+// You can customise this message to change the fields for
+// the output value from your Deployment
+message DeploymentOutput {
+  string url = 1;
+  string app_service_id = 2;
+  string app_service_slot_id = 3;
+}
