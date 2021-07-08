@@ -9,8 +9,8 @@ import (
 	"github.com/hashicorp/waypoint-plugin-sdk/docs"
 	"github.com/hashicorp/waypoint-plugin-sdk/terminal"
 	"github.com/hashicorp/waypoint/builtin/docker"
-	"github.com/magodo/waypoint-plugin-azure-app-service/azure"
-	"github.com/magodo/waypoint-plugin-azure-app-service/azure/web"
+	"github.com/magodo/waypoint-plugin-azure-app-service/internal/azure"
+	"github.com/magodo/waypoint-plugin-azure-app-service/internal/azure/web"
 	"net/http"
 )
 

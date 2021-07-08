@@ -8,6 +8,7 @@ app "example" {
         tag = "latest"
     }
   }
+
   deploy {
     use "azure-app-service" {
       resource_group_name = "acctestRG-mgdappservice"

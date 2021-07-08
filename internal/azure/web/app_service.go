@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	azureweb "github.com/Azure/azure-sdk-for-go/profiles/latest/web/mgmt/web"
-	"github.com/magodo/waypoint-plugin-azure-app-service/azure"
+	"github.com/magodo/waypoint-plugin-azure-app-service/internal/azure"
 )
 
 func AppServiceSupportsSlot(ctx context.Context, id AppServiceId) (bool, error) {

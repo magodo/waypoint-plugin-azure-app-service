@@ -7,8 +7,8 @@ import (
 	"github.com/hashicorp/waypoint-plugin-sdk/component"
 	"github.com/hashicorp/waypoint-plugin-sdk/docs"
 	"github.com/hashicorp/waypoint-plugin-sdk/terminal"
-	"github.com/magodo/waypoint-plugin-azure-app-service/azure"
-	"github.com/magodo/waypoint-plugin-azure-app-service/azure/web"
+	"github.com/magodo/waypoint-plugin-azure-app-service/internal/azure"
+	"github.com/magodo/waypoint-plugin-azure-app-service/internal/azure/web"
 )
 
 type ReleaseConfig struct {

@@ -28,7 +28,7 @@ func NewAuthorizer(ctx context.Context) (*Authorizer, error) {
 		// Feature Toggles
 		SupportsClientCertAuth:         true,
 		SupportsClientSecretAuth:       true,
-		SupportsManagedServiceIdentity: true,
+		SupportsManagedServiceIdentity: false,
 		SupportsAzureCliToken:          true,
 	}
 
