@@ -54,7 +54,7 @@ func (p *Platform) DeployFunc() interface{} {
 
 // Deploy deploys an image to Azure App Service.
 //
-// In case the App Service allows to create slot, it will create a new slot for each deployment.
+// In case the App Service allows to create a slot, it will create a new slot for each deployment.
 // Otherwise, it will deploy the app to the App Service's default production slot.
 func (p *Platform) Deploy(
 	ctx context.Context,

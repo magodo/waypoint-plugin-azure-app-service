@@ -1,75 +1,80 @@
-# Waypoint Plugin Template
+# waypoint-plugin-azure-app-service
 
-This folder contains an example plugin structure which can be used when building your own plugins.
+Plugin for waypoint that adds support for the Azure App Service.
 
-## Steps
+## Install
 
-1. To scaffold a new plugin use the `./clone.sh` script passing the destination folder and the Go package
-for your new plugin as parameters
+Check out the [waypoint doc](https://www.waypointproject.io/docs/plugins) about how to install and use an external plugin.
 
-```shell
-./clone.sh myplugin ../destination_folder github.com/myorg/mypackage
+## Authentication
+
+This plugin leverages the some basic auth package as the [Terraform AzureRM provider](https://github.com/terraform-providers/terraform-provider-azurerm). This means the way to authenticate against Azure is the same.
+
+For the sake of DRY, please check out the Terraform AzureRM provider [authentication guide](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs#authenticating-to-azure).
+
+## Prerequisite
+
+Since there are a lot of properties can be configured for Azure App Service and its dependencies, to make it simply do one thing (i.e. CD), this plugin decides to leave the provisioning of the App Service and its dependencies to the users.
+
+A simple provisioning can be done via below Terraform configuration:
+
+```hcl
+provider "azurerm" {
+  features {}
+}
+
+resource "azurerm_resource_group" "example" {
+  name     = "example-rg"
+  location = "west europe"
+}
+
+resource "azurerm_app_service_plan" "example" {
+  name                = "example-asp"
+  location            = azurerm_resource_group.example.location
+  resource_group_name = azurerm_resource_group.example.name
+
+  kind = "Linux"
+  reserved = true
+  
+  sku {
+    tier = "Standard"
+    size = "S1"
+  }
+}
+
+resource "azurerm_app_service" "test" {
+  name                = "example-as"
+  location            = azurerm_resource_group.example.location
+  resource_group_name = azurerm_resource_group.example.name
+  app_service_plan_id = azurerm_app_service_plan.example.id
+}
 ```
 
-2. You can then run the Makefile to compile the new plugin, the `Makefile` will build the plugin for all architectures.
+## Usage
 
-```shell
-cd ../destination_folder
+### Azure App Service Deployment
 
-make
+```hcl
+deploy {
+ use "azure-app-service" {
+   resource_group_name = "example-rg"
+   app_service_name = "example-as"
+ }
+}
 ```
 
-```shell
-Build Protos
-protoc -I . --go_out=plugins=grpc:. --go_opt=paths=source_relative ./builder/output.proto
-protoc -I . --go_out=plugins=grpc:. --go_opt=paths=source_relative ./registry/output.proto
-protoc -I . --go_out=plugins=grpc:. --go_opt=paths=source_relative ./internal/output.proto
-protoc -I . --go_out=plugins=grpc:. --go_opt=paths=source_relative ./releaser/output.proto
+For App Service that allows to create a slot (which means the sku of the App Service Plan is one of "Standard", "Premium", "Isolated"), the plguin will create a new slot for each deployment.
 
-Compile Plugin
-# Clear the output
-rm -rf ./bin
-GOOS=linux GOARCH=amd64 go build -o ./bin/linux_amd64/waypoint-plugin-mytest ./main.go 
-GOOS=darwin GOARCH=amd64 go build -o ./bin/darwin_amd64/waypoint-plugin-mytest ./main.go 
-GOOS=windows GOARCH=amd64 go build -o ./bin/windows_amd64/waypoint-plugin-mytest.exe ./main.go 
-GOOS=windows GOARCH=386 go build -o ./bin/windows_386/waypoint-plugin-mytest.exe ./main.go 
+Otherwise, it will deploy the app to the App Service's default production slot.
+
+### Azure App Service Release
+
+```hcl
+release {
+   use "azure-app-service" {}
+}
 ```
 
-## Building with Docker
+For App Service that allows to create a slot (which means the sku of the App Service Plan is one of "Standard", "Premium", "Isolated"), the plguin will swap the slot that is created in the deployment step with the production slot.
 
-To build plugins for release you can use the `build-docker` Makefile target, this will 
-build your plugin for all architectures and create zipped artifacts which can be uploaded
-to an artifact manager such as GitHub releases.
-
-The built artifacts will be output in the `./releases` folder.
-
-```shell
-make build-docker
-
-rm -rf ./releases
-DOCKER_BUILDKIT=1 docker build --output releases --progress=plain .
-#1 [internal] load .dockerignore
-#1 transferring context: 2B done
-#1 DONE 0.0s
-
-#...
-
-#14 [export_stage 1/1] COPY --from=build /go/plugin/bin/*.zip .
-#14 DONE 0.1s
-
-#15 exporting to client
-#15 copying files 36.45MB 0.1s done
-#15 DONE 0.1s
-```
-
-## Building and releasing with GitHub Actions
-
-When cloning the template a default GitHub Action is created at the path `.github/workflows/build-plugin.yaml`. You can use this action to automatically build and release your plugin.
-
-The action has two main phases:
-1. **Build** - This phase builds the plugin binaries for all the supported architectures. It is triggered when pushing
-   to a branch or on pull requests.
-1. **Release** - This phase creates a new GitHub release containing the built plugin. It is triggered when pushing tags
-   which starting with `v`, for example `v0.1.0`.
-
-You can enable this action by clicking on the `Actions` tab in your GitHub repository and enabling GitHub Actions.
+Otherwise, it will do nothing.
