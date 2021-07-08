@@ -7,7 +7,7 @@ endif
 
 .PHONY: all
 
-all: protos build
+all: protos buildall
 
 # Generate the Go code from Protocol Buffer definitions
 protos:
@@ -18,7 +18,7 @@ protos:
 	protoc -I . --go_out=. --go_opt=paths=source_relative --go-grpc_out=. ./internal/plugin/release.proto
 
 # Builds the plugin on your local machine
-build:
+buildall:
 	@echo ""
 	@echo "Compile Plugin"
 
@@ -26,12 +26,15 @@ build:
 	rm -rf ./bin
 
 	GOOS=linux GOARCH=amd64 go build -o ./bin/linux_amd64/waypoint-plugin-${PLUGIN_NAME} ./main.go 
-	# GOOS=darwin GOARCH=amd64 go build -o ./bin/darwin_amd64/waypoint-plugin-${PLUGIN_NAME} ./main.go 
-	# GOOS=windows GOARCH=amd64 go build -o ./bin/windows_amd64/waypoint-plugin-${PLUGIN_NAME}.exe ./main.go 
-	# GOOS=windows GOARCH=386 go build -o ./bin/windows_386/waypoint-plugin-${PLUGIN_NAME}.exe ./main.go 
+	GOOS=darwin GOARCH=amd64 go build -o ./bin/darwin_amd64/waypoint-plugin-${PLUGIN_NAME} ./main.go 
+	GOOS=windows GOARCH=amd64 go build -o ./bin/windows_amd64/waypoint-plugin-${PLUGIN_NAME}.exe ./main.go 
+	GOOS=windows GOARCH=386 go build -o ./bin/windows_386/waypoint-plugin-${PLUGIN_NAME}.exe ./main.go 
+
+build: protos
+	go build -o ./bin/${_ARCH}_amd64/waypoint-plugin-${PLUGIN_NAME} ./main.go 
 
 # Install the plugin locally
-install:
+install: build
 	@echo ""
 	@echo "Installing Plugin"
 
