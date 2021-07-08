@@ -59,7 +59,7 @@ jobs:
         name: plugin-binaries
 
     - name: Upload Release Asset ${{ matrix.os }}
-      uses: actions/upload-releaser-asset@v1
+      uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
